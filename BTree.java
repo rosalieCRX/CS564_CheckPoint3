@@ -294,8 +294,109 @@ class BTree {
      * TODO: Implement this function to delete in the B+Tree and student table. Return true if the
      * student is deleted successfully otherwise, return false.
      */
+
+    if (search(studentId) == -1) {
+      return false;
+    }
+    remove(null, root, studentId, new BTreeNode(t, true));
     return true;
   }
+
+
+  void remove(BTreeNode parentNode, BTreeNode currNode, long studentId, BTreeNode oldChild) {
+    //non-leaf node
+    if (!currNode.leaf) {
+        for (int i = 0; i < currNode.keys.length; i++) {
+          //recursive remove
+            if (studentId != currNode.keys[i]) {
+              if (studentId < currNode.keys[i])
+                remove(currNode, currNode.C[i], studentId, oldChild);
+              else if (studentId > currNode.keys[currNode.n - 1]) {
+                remove(currNode, currNode.C[currNode.n], studentId, oldChild);
+              }
+            }
+        }
+            //usual case, child not deleted. oldChild is null
+            if(oldChild == null) {
+                return;
+            }
+            else {
+                // remove oldChild from currNode
+                currNode.next = null;
+                // currNode has studentId to spare
+                if(currNode.keys != null) {
+                    oldChild = null;
+                    return;
+                }else {
+                    BTreeNode Sibling = parentNode.next;
+                    // S has extra entries
+                    if(Sibling.keys != null) {
+                        //redistribute evenly between N and S through parent
+                        
+                        oldChild = null;
+                        return;
+                    } else {
+                        // merge N and S
+                        
+                        oldChild = &(currNode);
+                        //pull splitting key from parent down into node on left
+                            BTreeNode left = parentNode.C[parentNode.C.length-1];
+                            for(int j = 0; j < currNode.keys.length; j++) {
+                                insertTree(left, currNode.s, left.next);
+                            }
+                            for(int j = 0; j < currNode.next.keys.length; j++) {
+                                insertTree(left.next, currNode.s, left.next);
+                            }
+                            parentNode.next = null;
+                          //move all entries from M to node on left
+                          //discard empty node M, return;
+                            if(parentNode.keys == null) {
+                                root = left;
+                                return;
+                            }
+                        }
+                        
+                }
+                
+                
+            }
+        }
+    // is a leaf node, L
+    if(currNode.leaf) {
+        // L has entries to spare
+        if(currNode.keys != null) {
+            //remove entry
+            currNode.next = null;
+            oldChild = null;
+            return;
+        }else {
+            BTreeNode Sibling = parentNode.next;
+            // S has extra entries
+            if(Sibling.keys != null) {
+                //redistribute evenly between N and S through parent
+               
+                // find entry in parent for node on right
+                BTreeNode right = parentNode.C[parentNode.n -2];
+ 
+                for(int i = 0; i < currNode.keys.length; i++) {
+                    insertTree(currNode, currNode.s, currNode.next);
+                }
+                for(int i = 0; i < currNode.C.length; i++) {
+                    insertTree(currNode.C, currNode.s, currNode.next);
+                }
+                for(int i = 0; i < right.C.length; i++) {
+                    insertTree(right.C, currNode.s, right.next);
+                }
+                parentNode.next = null;
+                if(parentNode.keys == null) {
+                    root = right;
+                    return;
+                }
+            }
+        }
+    }
+    return;
+}
 
   List<Long> print() {
 
@@ -306,6 +407,34 @@ class BTree {
      * right of leaf nodes.
      *
      */
+    if (root != null) {
+      // height
+      int h = root.n;
+      for (int i = 0; i >= 1; i--) {
+
+        printNode(root, listOfRecordID, i);
+      }
+    }
     return listOfRecordID;
+  }
+
+  /**
+   * Helper method for print
+   * 
+   * @param listOfRecordID
+   * @return listOfRecordID
+   */
+  void printNode(BTreeNode currNode, List<Long> listOfRecordID, int level) {
+    if (currNode == null) {
+      return;
+    }
+    if (level == 1) {
+      for (int i = 0; i < currNode.keys.length; i++) {
+        listOfRecordID.add(currNode.s[i].recordId);
+      }
+    } else if (level > 1) {
+      printNode(currNode.left, listOfRecordID, level);
+      printNode(currNode.right, listOfRecordID, level);
+    }
   }
 }

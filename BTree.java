@@ -5,8 +5,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -212,162 +215,295 @@ class BTree {
   }
 
 
-
   /**
-   * delete an existing student given a studentId. Return true if deletion is complete successfully.
-   * Return false otherwise.
+   * delete an existing student given a studentId. Return true if deletion is
+   * complete successfully. Return false otherwise.
    * 
    * @param studentId
-   * @return Return true if deletion is complete successfully. Return false otherwise.
+   * @return Return true if deletion is complete successfully. Return false
+   *         otherwise.
    */
   boolean delete(long studentId) {
-    /**
-     * TODO: Implement this function to delete in the B+Tree and student table. Return true if the
-     * student is deleted successfully otherwise, return false.
-     */
-
-    if (search(studentId) == -1) {
-      return false;
-    }
-    remove(null, root, studentId, new BTreeNode(t, true));
-    return true;
-  }
-
-
-  void remove(BTreeNode parentNode, BTreeNode currNode, long studentId, BTreeNode oldChild) {
-    //non-leaf node
-    if (!currNode.leaf) {
-        for (int i = 0; i < currNode.keys.length; i++) {
-          //recursive remove
-            if (studentId != currNode.keys[i]) {
-              if (studentId < currNode.keys[i])
-                remove(currNode, currNode.C[i], studentId, oldChild);
-              else if (studentId > currNode.keys[currNode.n - 1]) {
-                remove(currNode, currNode.C[currNode.n], studentId, oldChild);
-              }
-            }
-        }
-            //usual case, child not deleted. oldChild is null
-            if(oldChild == null) {
-                return;
-            }
-            else {
-                // remove oldChild from currNode
-                currNode.next = null;
-                // currNode has studentId to spare
-                if(currNode.keys != null) {
-                    oldChild = null;
-                    return;
-                }else {
-                    BTreeNode Sibling = parentNode.next;
-                    // S has extra entries
-                    if(Sibling.keys != null) {
-                        //redistribute evenly between N and S through parent
-                        
-                        oldChild = null;
-                        return;
-                    } else {
-                        // merge N and S
-                        
-                        oldChild = &(currNode);
-                        //pull splitting key from parent down into node on left
-                            BTreeNode left = parentNode.C[parentNode.C.length-1];
-                            for(int j = 0; j < currNode.keys.length; j++) {
-                                insertTree(left, currNode.s, left.next);
-                            }
-                            for(int j = 0; j < currNode.next.keys.length; j++) {
-                                insertTree(left.next, currNode.s, left.next);
-                            }
-                            parentNode.next = null;
-                          //move all entries from M to node on left
-                          //discard empty node M, return;
-                            if(parentNode.keys == null) {
-                                root = left;
-                                return;
-                            }
-                        }
-                        
-                }
-                
-                
-            }
-        }
-    // is a leaf node, L
-    if(currNode.leaf) {
-        // L has entries to spare
-        if(currNode.keys != null) {
-            //remove entry
-            currNode.next = null;
-            oldChild = null;
-            return;
-        }else {
-            BTreeNode Sibling = parentNode.next;
-            // S has extra entries
-            if(Sibling.keys != null) {
-                //redistribute evenly between N and S through parent
-               
-                // find entry in parent for node on right
-                BTreeNode right = parentNode.C[parentNode.n -2];
- 
-                for(int i = 0; i < currNode.keys.length; i++) {
-                    insertTree(currNode, currNode.s, currNode.next);
-                }
-                for(int i = 0; i < currNode.C.length; i++) {
-                    insertTree(currNode.C, currNode.s, currNode.next);
-                }
-                for(int i = 0; i < right.C.length; i++) {
-                    insertTree(right.C, currNode.s, right.next);
-                }
-                parentNode.next = null;
-                if(parentNode.keys == null) {
-                    root = right;
-                    return;
-                }
-            }
-        }
-    }
-    return;
-}
-
-  List<Long> print() {
-
-    List<Long> listOfRecordID = new ArrayList<>();
-
-    /**
-     * TODO: Implement this function to print the B+Tree. Return a list of recordIDs from left to
-     * right of leaf nodes.
-     *
-     */
-    if (root != null) {
-      // height
-      int h = root.n;
-      for (int i = 0; i >= 1; i--) {
-
-        printNode(root, listOfRecordID, i);
+      /**
+       * TODO: Implement this function to delete in the B+Tree and student table.
+       * Return true if the student is deleted successfully otherwise, return false.
+       */
+      if (search(studentId) == -1) {
+          return false;
       }
-    }
-    return listOfRecordID;
+      remove(root, root, studentId, new BTreeNode(t, true));
+
+      try {
+          File inputFile = new File("student.csv");
+          File outputFile = new File("student.csv");
+          BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+          BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
+          long Id = studentId;
+          String currentLine;
+          while ((currentLine = reader.readLine()) != null) {
+              if (currentLine.equals(Long.toString(Id))) {
+
+              }
+
+          }
+      } catch (IOException e) {
+          e.printStackTrace();
+      }
+
+      return true;
   }
 
   /**
-   * Helper method for print
-   * 
-   * @param listOfRecordID
-   * @return listOfRecordID
+   * TODO
+   * @param parentNode
+   * @param currNode
+   * @param studentId
+   * @param oldChild
    */
-  void printNode(BTreeNode currNode, List<Long> listOfRecordID, int level) {
-    if (currNode == null) {
-      return;
-    }
-    if (level == 1) {
-      for (int i = 0; i < currNode.keys.length; i++) {
-        listOfRecordID.add(currNode.s[i].recordId);
+  void remove(BTreeNode parentNode, BTreeNode currNode, long studentId, BTreeNode oldChild) {
+      // non-leaf node
+      if (!currNode.leaf) {
+          for (int i = 0; i < currNode.keys.length; i++) {
+              // recursive remove
+              if (currNode.keys[i] <= studentId) {
+                  remove(parentNode, currNode, studentId, oldChild);
+              } else if (currNode.keys[currNode.n - 1] > studentId) {
+                  remove(parentNode, currNode, studentId, oldChild);
+              }
+          }
+          // usual case, child not deleted. oldChild is null
+          if (oldChild == null) {
+              return;
+          } else {
+              // remove oldChild from currNode!!!!!!!!!!!!!!!!!!!!!
+              currNode.next = null;
+              // currNode has entries to spare
+              if (elementNum(currNode.keys) <= currNode.n) {
+                  // delete doesn't go further
+                  oldChild = null;
+                  return;
+              } else {
+                  // use parentpointer to find sibling
+                  int index = getIndex(currNode.keys, studentId);
+                  BTreeNode sibling = parentNode.children[index + 1];
+                  // S has extra entries
+                  if (elementNum(sibling.keys) < sibling.t && elementNum(sibling.keys) <= 2 * sibling.t) {
+                      // redistribute evenly between N and S through parent
+                      // move keys to left in the currNode
+                      if (currNode.keys[index - 1] == 0) {
+                          for (int i = 0; i < 2 * currNode.t; i++) {
+                              if (currNode.keys[i + 1] != 0 && currNode.keys[i] == 0) {
+                                  currNode.keys[i] = currNode.keys[i + 1];
+                              }
+                          }
+                      }
+                      // redistribute sibling's keys to currNode
+                      int elementNum = elementNum(currNode.keys);
+                      for (int i = 0; i <= 2 * sibling.t; i++) {
+                          if (i >= sibling.t) {
+                              currNode.keys[elementNum + i] = sibling.keys[i];
+                              if (sibling.keys[i + 1] != 0 && sibling.keys[i] == 0) {
+                                  sibling.keys[i] = sibling.keys[i + 1];
+                              }
+                          }
+                      }
+
+                      // move the smallest key of sibling to parent
+                      // for(int i = 0; i < sibling.keys.length; i++) {
+                      if (elementNum(parentNode.keys) < parentNode.t) {
+                          parentNode.keys[0] = sibling.keys[0];
+                      }
+                      // }
+
+                      oldChild = null;
+                      return;
+
+                  }
+                  // call node on the right hand side
+                  else {
+                      // merge N and S
+                      // move keys to left in the currNode
+                      if (currNode.keys[index - 1] == 0) {
+                          for (int i = 0; i < 2 * currNode.t; i++) {
+                              if (currNode.keys[i + 1] != 0 && currNode.keys[i] == 0) {
+                                  currNode.keys[i] = currNode.keys[i + 1];
+                              }
+                          }
+                      }
+                      // move all sibling's keys to currNode
+                      int elementNum = elementNum(currNode.keys);
+                      for (int i = 0; i <= sibling.keys.length; i++) {
+                          currNode.keys[elementNum + i] = sibling.keys[i];
+                      }
+                      sibling = null;
+                      // delete parentNode
+                      parentNode.children[0] = currNode;
+                      // move keys to left in the parentNode
+                      for (int i = 0; i < 2 * parentNode.t; i++) {
+                          if (parentNode.keys[i + 1] != 0 && parentNode.keys[i] == 0) {
+                              parentNode.keys[i] = parentNode.keys[i + 1];
+                          }
+                      }
+                      // oldchildentry = & (current entry in parent for M)
+                      int newindex = getIndex(parentNode.keys, studentId);
+                      oldChild = parentNode.children[newindex];
+                      // redistribute parentNode's children
+                      // move all entries from M to node on left
+                      for (int i = 0; i < parentNode.children.length; i++) {
+                          if (i != parentNode.children.length - 1)
+                              parentNode.children[i] = parentNode.children[i + 1];
+                      }
+
+                      // discard empty node M, return!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                      for (int i = 0; i < parentNode.children.length; i++) {
+                          if (parentNode.children[i] == null) {
+                              // ?????????????
+                          }
+                      }
+
+                      return;
+                  }
+              }
+
+          }
       }
-    } else if (level > 1) {
-      printNode(currNode.left, listOfRecordID, level);
-      printNode(currNode.right, listOfRecordID, level);
-    }
+      // currNode is a leaf node, call it L
+      if (currNode.leaf) {
+          // L has entries to spare
+          int a = elementNum(currNode.keys);
+          if (elementNum(currNode.keys) <= currNode.n && a > currNode.t) {
+              // remove entry
+              int j = 0;
+              for (int i = 0; i < currNode.keys.length; i++) {
+                  if (studentId == currNode.keys[i]) {
+                      currNode.keys[i] = 0;
+                      for (j = i; j < currNode.keys.length; j++) {
+                          if (currNode.keys[i + 1] != 0)
+                              currNode.keys[i] = currNode.keys[i + 1];
+                      }
+                  }
+              }
+
+              oldChild = null;
+              return;
+          }
+          // once in a while, the leaf becomes underfull
+          else {
+              // use parentNode to find sibling
+              int index = getIndex(currNode.keys, studentId);
+              BTreeNode sibling = parentNode.children[index + 1];
+              // S has extra entries
+              if (elementNum(sibling.keys) < sibling.t && elementNum(sibling.keys) <= 2 * sibling.t) {
+                  // redistribute evenly between N and S through parent
+                  // move keys to left in the currNode
+                  if (currNode.keys[index - 1] == 0) {
+                      for (int i = 0; i < 2 * currNode.t; i++) {
+                          if (currNode.keys[i + 1] != 0 && currNode.keys[i] == 0) {
+                              currNode.keys[i] = currNode.keys[i + 1];
+                          }
+                      }
+                  }
+                  // redistribute sibling's keys to currNode
+                  int elementNum = elementNum(currNode.keys);
+                  for (int i = 0; i <= 2 * sibling.t; i++) {
+                      if (i >= sibling.t) {
+                          currNode.keys[elementNum + i] = sibling.keys[i];
+                          if (sibling.keys[i + 1] != 0 && sibling.keys[i] == 0) {
+                              sibling.keys[i] = sibling.keys[i + 1];
+                          }
+                      }
+                  }
+
+                  // find entry in parent for node on right
+                  // move the smallest key of sibling to parent
+                  if (elementNum(parentNode.keys) < parentNode.t) {
+                      parentNode.keys[0] = sibling.keys[0];
+                  }
+                  oldChild = null;
+                  return;
+              }
+              // call node on right hand side M
+              else {
+                  // merge L and S
+                  // move keys to left in the currNode
+                  if (currNode.keys[index - 1] == 0) {
+                      for (int i = 0; i < 2 * currNode.t; i++) {
+                          if (currNode.keys[i + 1] != 0 && currNode.keys[i] == 0) {
+                              currNode.keys[i] = currNode.keys[i + 1];
+                          }
+                      }
+                  }
+                  // move all sibling's keys to currNode
+                  int elementNum = elementNum(currNode.keys);
+                  for (int i = 0; i <= sibling.keys.length; i++) {
+                      currNode.keys[elementNum + i] = sibling.keys[i];
+                  }
+                  sibling = null;
+                  // delete parentNode
+                  parentNode.children[0] = currNode;
+                  // move keys to left in the parentNode
+                  for (int i = 0; i < 2 * parentNode.t; i++) {
+                      if (parentNode.keys[i + 1] != 0 && parentNode.keys[i] == 0) {
+                          parentNode.keys[i] = parentNode.keys[i + 1];
+                      }
+                  }
+
+                  // oldchildentry = & (current entry in parent for M)
+                  int newindex = getIndex(parentNode.keys, studentId);
+                  oldChild = parentNode.children[newindex];
+                  // move all entries from M to node on left;
+                  for (int i = 0; i < parentNode.children.length; i++) {
+                      if (i != parentNode.children.length - 1)
+                          parentNode.children[i] = parentNode.children[i + 1];
+                  }
+                  // discard empty node M, return!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                  for (int i = 0; i < parentNode.children.length; i++) {
+                      if (parentNode.children[i] == null) {
+                          // ?????????????
+                      }
+                  }
+                  return;
+              }
+          }
+      }
+      return;
   }
+
+  
+  /**
+   * TODO
+   * @return
+   */
+  List<Long> print() {
+
+      List<Long> listOfRecordID = new ArrayList<>();
+
+      /**
+       * TODO: Implement this function to print the B+Tree. Return a list of recordIDs
+       * from left to right of leaf nodes.
+       *
+       */
+      BTreeNode currNode = root;
+      if (root != null) {
+          // go through all root's keys
+          for (int i = 0; i < root.children.length; i++) {
+              // check the availability
+              if (root.children[i] != null) {
+                  // reach to the leaf
+                  while (currNode.children != null) {
+                      if (currNode.leaf) {
+                          for (int j = 0; j < currNode.keys.length; j++) {
+                              if (currNode.keys[i] != 0)
+                                  listOfRecordID.add(currNode.values[i]);
+                          }
+                      }
+                  }
+              }
+          }
+      }
+      return listOfRecordID;
+  }
+
 
 
 

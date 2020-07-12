@@ -266,7 +266,7 @@ class BTree {
   }
 
   /**
-   * TODO
+   * TODO:paste instrution and add comment
    * 
    * @param parentNode
    * @param currNode
@@ -490,15 +490,15 @@ class BTree {
       // once in a while, the leaf becomes underfull
       else {
 
-        //TODO: similar to the redistribute and merge above
-        //TODO: you can use BTreeNode.n here
-        //TODO: you need to decrement n after you delete a key-value pair
-        
-        
-        
-        //TODO: I paste from the redistribute and merge above
-        
-        
+        // TODO: similar to the redistribute and merge above
+        // TODO: you can use BTreeNode.n here
+        // TODO: you need to decrement n after you delete a key-value pair
+
+
+
+        // TODO: I paste from the redistribute and merge above
+
+
         // use parentpointer to find sibling
         int currIndex = getDeleteIndex(parentNode.keys, currNode.keys[0]);
         // get left sibling
@@ -520,8 +520,7 @@ class BTree {
 
           // transfer keys and children
           int copyNum = t - elementNum(currNode.keys);
-          System.arraycopy(rightSibling.keys, 0, currNode.keys, elementNum(currNode.keys),
-              copyNum);
+          System.arraycopy(rightSibling.keys, 0, currNode.keys, elementNum(currNode.keys), copyNum);
           System.arraycopy(rightSibling.children, 0, currNode.children, elementNum(currNode.keys),
               copyNum);
 
@@ -544,18 +543,12 @@ class BTree {
         // check the other sibling
         else if (leftSibling != null
             && elementNum(leftSibling.keys) >= 2 * t - elementNum(currNode.keys)) {
-          
-          
+
+
           // TODO: Copy and revise the above if
 
-          
-          
-          
-          
-          
-          
-          
-          
+
+
           // update parent
           parentNode.keys[currIndex] = currNode.keys[0];
 
@@ -567,43 +560,30 @@ class BTree {
         else if (rightSibling != null) {
           // merge N and S
           oldChild = currNode;
-          
-          //move parent's key down
-          currNode.keys[elementNum(currNode.keys)]=parentNode.keys[currIndex+1];
+
+          // move parent's key down
+          currNode.keys[elementNum(currNode.keys)] = parentNode.keys[currIndex + 1];
           // move keys in from sibling
           System.arraycopy(rightSibling.children, 0, currNode.children, elementNum(currNode.keys),
-              elementNum(rightSibling.keys)+1);
+              elementNum(rightSibling.keys) + 1);
           System.arraycopy(rightSibling.keys, 0, currNode.keys, elementNum(currNode.keys),
               elementNum(rightSibling.keys));
-          
-          //discard sibling
-          deleteChild(parentNode.children,getInsertIndex(parentNode.keys,rightSibling.keys[0]));
-          deleteValue(parentNode.keys,currIndex+1);
+
+          // discard sibling
+          deleteChild(parentNode.children, getInsertIndex(parentNode.keys, rightSibling.keys[0]));
+          deleteValue(parentNode.keys, currIndex + 1);
 
           return;
         }
         // call node on the left hand side, merge with left sibling
         else if (leftSibling != null) {
-          //TODO:copy & revise like the above merge or your own ideas
+          // TODO:copy & revise like the above merge or your own ideas
 
           return;
         }
-      
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+
+
+
         // use parentNode to find sibling
         int index1 = getInsertIndex(currNode.keys, studentId);
         BTreeNode sibling = parentNode.children[index1 + 1];
@@ -690,45 +670,44 @@ class BTree {
 
 
   /**
-   * Return a list of recordIDs from left to
-   * right of leaf nodes.
+   * Return a list of recordIDs from left to right of leaf nodes.
    *
    */
   List<Long> print() {
 
     List<Long> listOfRecordID = new ArrayList<>();
 
-    
+
     BTreeNode currNode = root;
     if (root != null) {
       // go through all root's keys
-      
-      
-      //TODO: what are you doing here????
-//      for (int i = 0; i < root.children.length; i++) {
-//        // check the availability
-//        if (root.children[i] != null) {
-//          // reach to the leaf
-//          while (currNode.children != null) {
-//            if (currNode.leaf) {
-//              for (int j = 0; j < currNode.keys.length; j++) {
-//                if (currNode.keys[i] != 0)
-//                  listOfRecordID.add(currNode.values[i]);
-//              }
-//            }
-//          }
-//        }
-//      }
-      
-      
-      
-      //find the smallest leaf
-      while(!currNode.leaf) {
+
+
+      // TODO: what are you doing here????
+      // for (int i = 0; i < root.children.length; i++) {
+      // // check the availability
+      // if (root.children[i] != null) {
+      // // reach to the leaf
+      // while (currNode.children != null) {
+      // if (currNode.leaf) {
+      // for (int j = 0; j < currNode.keys.length; j++) {
+      // if (currNode.keys[i] != 0)
+      // listOfRecordID.add(currNode.values[i]);
+      // }
+      // }
+      // }
+      // }
+      // }
+
+
+
+      // find the smallest leaf
+      while (!currNode.leaf) {
         currNode = currNode.children[0];
       }
-      //add all recordIds
-      while(currNode.next!=null) {
-        for(int i=0;i<currNode.n;i++) {
+      // add all recordIds
+      while (currNode.next != null) {
+        for (int i = 0; i < currNode.n; i++) {
           listOfRecordID.add(currNode.values[i]);
         }
       }

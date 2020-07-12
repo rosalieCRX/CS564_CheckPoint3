@@ -468,6 +468,10 @@ class BTree {
     // copy first
     newNode.keys = Arrays.copyOfRange(currNode.keys, t, currNode.keys.length);
     newNode.children = Arrays.copyOfRange(currNode.children, t + 1, currNode.children.length);
+    newNode.keys = Arrays.copyOf(newNode.keys, currNode.keys.length);
+    newNode.values = Arrays.copyOf(newNode.values, currNode.keys.length);
+    
+    
     // clears the second half of the original keys and children list
     Arrays.fill(currNode.keys, t, currNode.keys.length, 0);
     Arrays.fill(currNode.children, t, currNode.children.length, null);
@@ -502,6 +506,9 @@ class BTree {
     // copy first
     newNode.keys = Arrays.copyOfRange(currNode.keys, t, currNode.keys.length);
     newNode.values = Arrays.copyOfRange(currNode.values, t + 1, currNode.keys.length);
+    newNode.keys = Arrays.copyOf(newNode.keys, currNode.keys.length);
+    newNode.values = Arrays.copyOf(newNode.values, currNode.keys.length);
+    
     // clears the second half of the original keys and value list
     Arrays.fill(currNode.keys, t, currNode.keys.length, 0);
     Arrays.fill(currNode.values, t, currNode.keys.length, 0);

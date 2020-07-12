@@ -118,8 +118,8 @@ public class BTreeMain {
       // a loop to read the csv file
       while ((tuple = csvReader.readLine()) != null) {
         String[] attribute = tuple.split(",");
-        studentList.add(new Student(Long.valueOf(attribute[0]), Integer.valueOf(attribute[1]),
-            attribute[2], attribute[3], attribute[4], Long.valueOf(attribute[5])));
+        studentList.add(new Student(Long.valueOf(attribute[0]), Integer.valueOf(attribute[4]),
+            attribute[1], attribute[2], attribute[3], Long.valueOf(attribute[5])));
       }
       csvReader.close();
     } catch (FileNotFoundException e1) {

@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +23,7 @@ public class BTreeMain {
     /** Read the input file -- input.txt */
     Scanner scan = null;
     try {
-      scan = new Scanner(new File("src/input.txt"));
+      scan = new Scanner(new File("src/input.txt"));//TODO
     } catch (FileNotFoundException e) {
       System.out.println("File not found.");
     }
@@ -58,7 +59,7 @@ public class BTreeMain {
               String level = s2.next();
               int age = Integer.parseInt(s2.next());
               /** TODO: Write a logic to generate recordID */
-              long recordID = rand.nextLong();
+              long recordID = Math.abs(rand.nextLong());
 
               Student s = new Student(studentId, age, studentName, major, level, recordID);
               bTree.insert(s);
@@ -122,6 +123,13 @@ public class BTreeMain {
             attribute[1], attribute[2], attribute[3], Long.valueOf(attribute[5])));
       }
       csvReader.close();
+      
+      //clears the file
+      FileWriter csvWriter = new FileWriter(new File("Student.csv"), false);
+      csvWriter.append("");
+      csvWriter.close();
+      
+      
     } catch (FileNotFoundException e1) {
       // TODO Auto-generated catch block
       e1.printStackTrace();

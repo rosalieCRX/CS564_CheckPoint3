@@ -133,7 +133,7 @@ class BTree {
 
     // write to
     try {
-      csvWriter = new FileWriter(new File("Student.csv"));
+      csvWriter = new FileWriter(new File("Student.csv"), true);
       // add student infomation to csv
       csvWriter.append(student.studentId + "," + student.studentName + "," + student.major + ","
           + student.level + "," + student.age + "," + student.recordId);
@@ -249,6 +249,12 @@ class BTree {
       BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
       long Id = studentId;
       String currentLine;
+
+
+      // TODO : you need to read all data into an arraylist/something and then use another loop to
+      // put these data back
+      // what you have can cause an INFINITE LOOP!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      //
       while ((currentLine = reader.readLine()) != null) {
         if (currentLine.equals(Long.toString(Id))) {
           // TODO
@@ -256,6 +262,7 @@ class BTree {
         }
         // // TODO
         // else add to file
+
 
       }
     } catch (IOException e) {

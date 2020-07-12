@@ -469,7 +469,7 @@ class BTree {
     newNode.keys = Arrays.copyOfRange(currNode.keys, t, currNode.keys.length);
     newNode.children = Arrays.copyOfRange(currNode.children, t + 1, currNode.children.length);
     newNode.keys = Arrays.copyOf(newNode.keys, currNode.keys.length);
-    newNode.values = Arrays.copyOf(newNode.values, currNode.keys.length);
+    newNode.children = Arrays.copyOf(newNode.children, currNode.children.length);
     
     
     // clears the second half of the original keys and children list

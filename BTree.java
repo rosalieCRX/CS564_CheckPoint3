@@ -127,7 +127,7 @@ class BTree {
       root = new BTreeNode(t, true);// set up the tree
       root.keys[0] = student.studentId;// set up key
       root.values[0] = student.recordId;// set up key-value pair
- 
+
       // increment key-value pair count
       root.n++;
 
@@ -140,7 +140,7 @@ class BTree {
       csvWriter = new FileWriter(new File("Student.csv"), true);
       // add student infomation to csv
       csvWriter.append(student.studentId + "," + student.studentName + "," + student.major + ","
-          + student.level + "," + student.age + "," + student.recordId+"\n");
+          + student.level + "," + student.age + "," + student.recordId + "\n");
       csvWriter.flush();
       csvWriter.close();
     } catch (IOException e) {
@@ -189,8 +189,7 @@ class BTree {
         else {
 
           // keep propogating
-          newChild = splitInternal(currNode, newChild);
-
+          copy(splitInternal(currNode, newChild), newChild);
           // if current node is root, create a new node
           if (currNode == root) {
             root = new BTreeNode(t, false);
@@ -220,8 +219,7 @@ class BTree {
       // if splitting is needed
       else {
         // keep propogating
-        newChild = splitLeaf(currNode, student);
-
+        copy(splitLeaf(currNode, student), newChild);
       }
 
     }
@@ -404,7 +402,7 @@ class BTree {
           // call node on the right hand side, merge
           else if (rightSibling != null) {
             // merge N and S
-            oldChild = currNode;
+            copy(currNode, oldChild);
 
             // move parent's key down
             currNode.keys[elementNum(currNode.keys)] = parentNode.keys[currIndex + 1];
@@ -570,8 +568,8 @@ class BTree {
         // call node on the right hand side, merge
         else if (rightSibling != null) {
           // merge N and S
-          oldChild = currNode;
-
+          copy(currNode, oldChild);
+          
           // move parent's key down
           currNode.keys[elementNum(currNode.keys)] = parentNode.keys[currIndex + 1];
           // move keys in from sibling
@@ -625,7 +623,7 @@ class BTree {
           if (elementNum(parentNode.keys) < parentNode.t) {
             parentNode.keys[0] = sibling.keys[0];
           }
-          setNull(oldChild );
+          setNull(oldChild);
           return;
         }
         // call node on right hand side M
@@ -808,7 +806,7 @@ class BTree {
    */
   void insertValue(long[] list, int index, long value) {
     for (int i = list.length - 1; i > index; i--) {
-      list[i] = list[i-1];
+      list[i] = list[i - 1];
     }
     list[index] = value;
   }
@@ -822,7 +820,7 @@ class BTree {
    */
   void insertChild(BTreeNode[] list, int index, BTreeNode child) {
     for (int i = list.length - 1; i >= index; i--) {
-      list[i ] = list[i-1];
+      list[i] = list[i - 1];
     }
     list[index] = child;
   }
@@ -877,7 +875,7 @@ class BTree {
 
     // copy first
     newNode.keys = Arrays.copyOfRange(currNode.keys, t, currNode.keys.length);
-    newNode.values = Arrays.copyOfRange(currNode.values, t , currNode.keys.length);
+    newNode.values = Arrays.copyOfRange(currNode.values, t, currNode.keys.length);
     newNode.keys = Arrays.copyOf(newNode.keys, currNode.keys.length);
     newNode.values = Arrays.copyOf(newNode.values, currNode.keys.length);
 
@@ -946,9 +944,10 @@ class BTree {
     }
     list[list.length - 1] = null;
   }
-  
+
   /**
    * set a child to null
+   * 
    * @param dest
    * @param source
    */
@@ -960,31 +959,31 @@ class BTree {
     node.n = 0;
     node.next = null;
     node.values = new long[2 * t - 1];
-    
+
   }
-  
+
   /**
    * check if node is null
+   * 
    * @param node
    * @return true if null
    */
   boolean isNull(BTreeNode node) {
-    return node.keys.length==0;
+    return node.keys.length == 0;
   }
-  
+
   /*
    * deep copy from a node into another node
    */
-  void copy(BTreeNode source,BTreeNode dest) {
+  void copy(BTreeNode source, BTreeNode dest) {
     dest.t = source.t;
-    dest.leaf=source.leaf;
-    dest.keys= source.keys;
-    dest.children= source.children;
-    dest.n=source.n = 0;
+    dest.leaf = source.leaf;
+    dest.keys = source.keys;
+    dest.children = source.children;
+    dest.n = source.n = 0;
     dest.next = source.next;
-    dest.values=source.values;
+    dest.values = source.values;
   }
 }
-
 
 

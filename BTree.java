@@ -169,18 +169,22 @@ class BTree {
       }
       // we split child, must insert *newchildentry in currNode
       else {
+        //the newly splitted node
+        BTreeNode newNode = new BTreeNode(t,false);
+        copy(newChild,newNode);
+        
         // if we have space to accept the newChild
         if (hasSpace(currNode.keys)) {
           // insert child
-          int index = getInsertIndex(currNode.keys, newChild.keys[0]);
+          int index = getInsertIndex(currNode.keys, newNode.keys[0]);
           if (index == 0) {
-            insertChild(currNode.children, 0, newChild);
+            insertChild(currNode.children, 0, newNode);
           } else {
-            insertChild(currNode.children, getInsertIndex(currNode.keys, newChild.keys[0]) + 1,
-                newChild);
+            insertChild(currNode.children, getInsertIndex(currNode.keys, newNode.keys[0]) + 1,
+                newNode);
           }
           // insert key
-          insertValue(currNode.keys, index, newChild.keys[0]);
+          insertValue(currNode.keys, index, newNode.keys[0]);
 
           setNull(newChild);
           return;
@@ -189,7 +193,8 @@ class BTree {
         else {
 
           // keep propogating
-          copy(splitInternal(currNode, newChild), newChild);
+          splitInternal(currNode, newChild);
+          
           // if current node is root, create a new node
           if (currNode == root) {
             root = new BTreeNode(t, false);
@@ -219,7 +224,15 @@ class BTree {
       // if splitting is needed
       else {
         // keep propogating
-        copy(splitLeaf(currNode, student), newChild);
+        splitLeaf(currNode, student,newChild);
+        
+        // if current node is root, create a new node
+        if (currNode == root) {
+          root = new BTreeNode(t, false);
+          root.children[0] = currNode;
+          root.children[1] = newChild;
+          root.keys[0] = newChild.keys[0];
+        }
       }
 
     }
@@ -822,24 +835,21 @@ class BTree {
     for (int i = list.length - 1; i >= index; i--) {
       list[i] = list[i - 1];
     }
-    list[index] = child;
+    list[index] = new BTreeNode(t,false);
+    copy(child,list[index]);
   }
-
   /**
    * Split an internal node
    * 
    * @param currNode
-   * @param newChild
-   * @return the newly produced internal node
+   * @param newChild placeholder for splitted node
    */
-  BTreeNode splitInternal(BTreeNode currNode, BTreeNode newChild) {
-    // the new node splitted that stores the larger keys and children
-    BTreeNode newNode = new BTreeNode(t, false);
+  void splitInternal(BTreeNode currNode, BTreeNode newChild) {
     // copy first
-    newNode.keys = Arrays.copyOfRange(currNode.keys, t, currNode.keys.length);
-    newNode.children = Arrays.copyOfRange(currNode.children, t + 1, currNode.children.length);
-    newNode.keys = Arrays.copyOf(newNode.keys, currNode.keys.length);
-    newNode.children = Arrays.copyOf(newNode.children, currNode.children.length);
+    newChild.keys = Arrays.copyOfRange(currNode.keys, t, currNode.keys.length);
+    newChild.children = Arrays.copyOfRange(currNode.children, t, currNode.children.length);
+    newChild.keys = Arrays.copyOf(newChild.keys, currNode.keys.length);
+    newChild.children = Arrays.copyOf(newChild.children, currNode.children.length);
 
 
     // clears the second half of the original keys and children list
@@ -849,8 +859,8 @@ class BTree {
     // if the newChild should be added to the newNode
     if (newChild.keys[0] > currNode.keys[t - 1]) {
       // insert child and value
-      insertChild(newNode.children, getInsertIndex(newNode.keys, newChild.keys[0]) + 1, newChild);
-      insertValue(newNode.keys, getInsertIndex(newNode.keys, newChild.keys[0]), newChild.keys[0]);
+      insertChild(newChild.children, getInsertIndex(newChild.keys, newChild.keys[0]) + 1, newChild);
+      insertValue(newChild.keys, getInsertIndex(newChild.keys, newChild.keys[0]), newChild.keys[0]);
     }
     // insert into currNode
     else {
@@ -859,25 +869,23 @@ class BTree {
       insertValue(currNode.keys, getInsertIndex(currNode.keys, newChild.keys[0]), newChild.keys[0]);
     }
 
-    return newNode;
   }
 
   /**
    * split a leaf node
    * 
    * @param currNode
-   * @param newChild
-   * @return the newly produced internal node
+   * @param student 
+   * @param newChild--the new node splitted that stores the larger keys and values
+   * 
    */
-  BTreeNode splitLeaf(BTreeNode currNode, Student student) {
-    // the new node splitted that stores the larger keys and values
-    BTreeNode newNode = new BTreeNode(t, true);
-
+  void splitLeaf(BTreeNode currNode, Student student, BTreeNode newChild) {
+    newChild.leaf=true;
     // copy first
-    newNode.keys = Arrays.copyOfRange(currNode.keys, t, currNode.keys.length);
-    newNode.values = Arrays.copyOfRange(currNode.values, t, currNode.keys.length);
-    newNode.keys = Arrays.copyOf(newNode.keys, currNode.keys.length);
-    newNode.values = Arrays.copyOf(newNode.values, currNode.keys.length);
+    newChild.keys = Arrays.copyOfRange(currNode.keys, t, currNode.keys.length);
+    newChild.values = Arrays.copyOfRange(currNode.values, t, currNode.keys.length);
+    newChild.keys = Arrays.copyOf(newChild.keys, currNode.keys.length);
+    newChild.values = Arrays.copyOf(newChild.values, currNode.keys.length);
 
     // clears the second half of the original keys and value list
     Arrays.fill(currNode.keys, t, currNode.keys.length, 0);
@@ -887,9 +895,9 @@ class BTree {
     // if the entry should be added to the newNode
     if (student.studentId > currNode.keys[t - 1]) {
       // insert values
-      insertValue(newNode.values, getInsertIndex(newNode.keys, student.studentId),
+      insertValue(newChild.values, getInsertIndex(newChild.keys, student.studentId),
           student.recordId);
-      insertValue(newNode.keys, getInsertIndex(newNode.keys, student.studentId), student.studentId);
+      insertValue(newChild.keys, getInsertIndex(newChild.keys, student.studentId), student.studentId);
 
     }
     // insert into currNode
@@ -904,13 +912,12 @@ class BTree {
 
     // updates the key-value pair count
     currNode.n = elementNum(currNode.keys);
-    newNode.n = elementNum(currNode.keys);
+    newChild.n = elementNum(currNode.keys);
 
     // updates the sibling pointers
-    newNode.next = currNode.next;
-    currNode.next = newNode;
+    newChild.next = currNode.next;
+    currNode.next = newChild;
 
-    return newNode;
   }
 
 
@@ -969,7 +976,7 @@ class BTree {
    * @return true if null
    */
   boolean isNull(BTreeNode node) {
-    return node.keys.length == 0;
+    return elementNum(node.keys) == 0;
   }
 
   /*
@@ -977,12 +984,21 @@ class BTree {
    */
   void copy(BTreeNode source, BTreeNode dest) {
     dest.t = source.t;
-    dest.leaf = source.leaf;
-    dest.keys = source.keys;
-    dest.children = source.children;
-    dest.n = source.n = 0;
+    dest.leaf = source.leaf; 
+    //deep copy key list
+    for(int i=0;i<source.keys.length;i++) {
+      dest.keys[i] = source.keys[i];
+    }
+    //deep copy child list
+    for(int i=0;i<source.children.length;i++) {
+      dest.children[i] = source.children[i];
+    }
+    dest.n = source.n;
     dest.next = source.next;
-    dest.values = source.values;
+    //deep copy value list
+    for(int i=0;i<source.values.length;i++) {
+      dest.values[i] = source.values[i];
+    }
   }
 }
 

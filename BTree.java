@@ -194,7 +194,7 @@ class BTree {
         else {
 
           // keep propogating
-          splitInternal(currNode, newChild);
+          splitInternal(currNode, newChild, newNode);
 
           // if current node is root, create a new node
           if (currNode == root) {
@@ -729,7 +729,7 @@ class BTree {
         currNode = currNode.children[0];
       }
       // add all recordIds
-      while (currNode.next != null) {
+      while (currNode != null) {
         for (int i = 0; i < currNode.n; i++) {
           listOfRecordID.add(currNode.values[i]);
         }
@@ -840,35 +840,46 @@ class BTree {
     list[index] = child;
   }
 
+
   /**
    * Split an internal node
    * 
    * @param currNode
-   * @param newChild placeholder for splitted node
+   * @param newNode  placeholder for splitted node
+   * @param newChild node that need to be added
    */
-  void splitInternal(BTreeNode currNode, BTreeNode newChild) {
+  void splitInternal(BTreeNode currNode, BTreeNode newNode, BTreeNode newChild) {
+    newNode.leaf = false;
     // copy first
-    newChild.keys = Arrays.copyOfRange(currNode.keys, t, currNode.keys.length);
-    newChild.children = Arrays.copyOfRange(currNode.children, t, currNode.children.length);
-    newChild.keys = Arrays.copyOf(newChild.keys, currNode.keys.length);
-    newChild.children = Arrays.copyOf(newChild.children, currNode.children.length);
+    newNode.keys = Arrays.copyOfRange(currNode.keys, t, currNode.keys.length);
+    newNode.children = Arrays.copyOfRange(currNode.children, t, currNode.children.length);
+    newNode.keys = Arrays.copyOf(newNode.keys, currNode.keys.length);
+    newNode.children = Arrays.copyOf(newNode.children, currNode.children.length);
 
 
     // clears the second half of the original keys and children list
-    Arrays.fill(currNode.keys, t, currNode.keys.length, 0);
+    Arrays.fill(currNode.keys, t - 1, currNode.keys.length, 0);
     Arrays.fill(currNode.children, t, currNode.children.length, null);
 
-    // if the newChild should be added to the newNode
+    // if the newNode should be added to the newChild
     if (newChild.keys[0] > currNode.keys[t - 1]) {
       // insert child and value
-      insertChild(newChild.children, getInsertIndex(newChild.keys, newChild.keys[0]) + 1, newChild);
-      insertValue(newChild.keys, getInsertIndex(newChild.keys, newChild.keys[0]), newChild.keys[0]);
+      insertChild(newNode.children, getInsertIndex(newNode.keys, newChild.keys[0]) + 1, newChild);
+      insertValue(newNode.keys, getInsertIndex(newNode.keys, newChild.keys[0]), newChild.keys[0]);
+      // update reference
+      if (getInsertIndex(newNode.keys, newChild.keys[0]) == 0) {
+        currNode.children[t - 1].next = newChild;
+      } else {
+        newNode.children[getInsertIndex(newNode.keys, newChild.keys[0])].next = newChild;
+      }
     }
     // insert into currNode
     else {
       // insert child and value
       insertChild(currNode.children, getInsertIndex(currNode.keys, newChild.keys[0]) + 1, newChild);
       insertValue(currNode.keys, getInsertIndex(currNode.keys, newChild.keys[0]), newChild.keys[0]);
+      // update reference
+      currNode.children[getInsertIndex(newNode.keys, newChild.keys[0])].next = newChild;
     }
 
   }

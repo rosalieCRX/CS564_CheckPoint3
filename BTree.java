@@ -1,15 +1,14 @@
 
 /**
- * Do NOT modify. This is the class with the main function
+ * CS564 Group 17 Rosalie Cai, Ruiqi Hu
  */
-
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -20,6 +19,7 @@ import java.io.IOException;
  */
 class BTree {
 	FileWriter csvWriter;
+
 	/**
 	 * Pointer to the root node.
 	 */
@@ -43,11 +43,6 @@ class BTree {
 	 * @return recordId
 	 */
 	long search(long studentId) {
-		/**
-		 * TODO: Implement this function to search in the B+Tree. Return recordID for
-		 * the given StudentID. Otherwise, print out a message that the given studentId
-		 * has not been found in the table and return -1.
-		 */
 		return searchTree(root, studentId);
 	}
 
@@ -71,7 +66,7 @@ class BTree {
 			for (int i = 0; i < currNode.keys.length; i++) {
 				// if studentId found
 				if (currNode.keys[i] == studentId) {
-					return currNode.s[i].recordId;
+					return currNode.values[i];
 				}
 			}
 			// if not found
@@ -82,22 +77,29 @@ class BTree {
 		else {
 			// if ID is smaller than the smallest key, go left
 			if (studentId < currNode.keys[0]) {
-				return searchTree(currNode.C[0], studentId);
+				return searchTree(currNode.children[0], studentId);
 			}
-			// if ID is larger than the biggest key, go right
-			else if (studentId >= currNode.keys[currNode.n - 1]) {
-				return searchTree(currNode.C[currNode.n], studentId);
-			}
-			// if ID is somewhere in the middle
+			// if ID is larger than the smallest key, go right
+
+			// else if (studentId >= currNode.keys[currNode.n - 1]) {
+			// return searchTree(currNode.C[currNode.n], studentId);
+			// }
+			// // if ID is somewhere in the middle
 			else {
-				for (int i = 0; i < currNode.n; i++) {
-					if (studentId < currNode.keys[i]) {
-						return searchTree(currNode.C[i], studentId);
+				for (int i = 1; i < currNode.keys.length; i++) {
+					// if ID is somewhere in the middle
+					if (currNode.keys[i] != 0 && studentId < currNode.keys[i]) {
+						return searchTree(currNode.children[i], studentId);
+					}
+					// if all keys are searched
+					if (currNode.keys[i] == 0) {
+						return searchTree(currNode.children[i], studentId);
 					}
 				}
 			}
 
 		}
+
 		return -1;
 
 	}
@@ -111,17 +113,40 @@ class BTree {
 	 * @return
 	 */
 	BTree insert(Student student) {
+		// check input
+		if (student.studentId == 0) {
+			System.out.print("You should not have 0 for student ID");
+			return this;
+		}
+
 		/**
 		 * TODO: Implement this function to insert in the B+Tree. Also, implement in
 		 * student.csv after inserting in B+Tree.
 		 */
 		if (root == null) {
 			root = new BTreeNode(t, true);// set up the tree
-			root.keys[0] = (int) student.studentId;// set up key
-			root.s[0] = student;// set up key-value pair
+			root.keys[0] = student.studentId;// set up key
+			root.values[0] = student.recordId;// set up key-value pair
+
+			// increment key-value pair count
+			root.n++;
+
 		} else {
-			insertTree(root, student, new BTreeNode(t, true));
+			insertTree(root, student, new BTreeNode(t, false));
 		}
+
+		// write to csv
+		try {
+			csvWriter = new FileWriter(new File("Student.csv"), true);
+			// add student infomation to csv
+			csvWriter.append(student.studentId + "," + student.studentName + "," + student.major + "," + student.level
+					+ "," + student.age + "," + student.recordId + "\n");
+			csvWriter.flush();
+			csvWriter.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
 		return this;
 	}
 
@@ -130,162 +155,72 @@ class BTree {
 	 * 
 	 * @param currNode
 	 * @param student
-	 * @param newChild
+	 * @param newChlide
 	 */
 	void insertTree(BTreeNode currNode, Student student, BTreeNode newChild) {
-		// search for matching place
 		// if not leaf
+		// search for matching place to insert
 		if (!currNode.leaf) {
-			for (int i = 0; i < currNode.keys.length; i++) {
-				// insert
-				if (student.studentId != currNode.keys[i]) {
-					if (student.studentId < currNode.keys[i])
-						insertTree(currNode.C[i], student, newChild);
-					else if (student.studentId > currNode.keys[currNode.n - 1]) {
-						insertTree(currNode.C[currNode.n], student, newChild);
+			insertTree(currNode.children[getInsertIndex(currNode.keys, student.studentId)], student, newChild);
+			// usual case; didn’t split child
+			if (isNull(newChild)) {
+				return;
+			}
+			// we split child, must insert *newchildentry in currNode
+			else {
+				// if we have space to accept the newChild
+				if (hasSpace(currNode.keys)) {
+					// insert child
+					int index = getInsertIndex(currNode.keys, newChild.keys[0]);
+					if (index == 0) {
+						insertChild(currNode.children, 0, newChild);
+					} else {
+						insertChild(currNode.children, getInsertIndex(currNode.keys, newChild.keys[0]) + 1, newChild);
 					}
-				}
+					// insert key
+					insertValue(currNode.keys, index, newChild.keys[0]);
 
-				// usual case; didnâ€™t split child
-				if (newChild == null) {
+					setNull(newChild);
 					return;
 				}
-				// we split child, must insert *newchildentry in currNode
+				// if we do ont have space
 				else {
-					// if currNode have space
-					if (currNode.n < currNode.C.length) {
-						if (student.studentId > currNode.keys[currNode.n - 1]) {
-							// add key
-							currNode.keys[currNode.n] = newChild.keys[0];
-							currNode.n++;
-							// add child
-							currNode.C[currNode.n] = newChild;
-						} else {
-							for (int j = currNode.keys.length - 1; j > i; i++) {
-								currNode.keys[j] = newChild.keys[j - 1];
-								currNode.C[j + 1] = newChild.C[j];
-							}
-							currNode.keys[i + 1] = newChild.keys[0];
-							currNode.n++;
-							currNode.C[i + 2] = newChild;
-						}
 
-						newChild = null;
-						return;
-					}
-					// no space
-					else {
-						newChild.leaf = false;
-						int[] temp = Arrays.copyOf(currNode.keys, currNode.keys.length + 1);
-						temp[temp.length - 1] = newChild.keys[0];
-						// set up new keys array
-						Arrays.sort(temp);
+					// keep propogating
+					newChild = splitInternal(currNode, newChild);
 
-						BTreeNode[] temp2 = Arrays.copyOf(currNode.C, currNode.C.length + 1);
-						temp2[temp2.length - 1] = newChild;
-						// set up new student array
-						Arrays.sort(temp2, new Comparator<BTreeNode>() {
-							@Override
-							public int compare(BTreeNode o1, BTreeNode o2) {
-
-								return (int) (o1.keys[0] - o2.keys[0]);
-							}
-						});
-
-						// update all arrays
-						Arrays.fill(currNode.keys, 0);
-						Arrays.fill(currNode.C, null);
-						for (int j = 0; j < currNode.C.length; j++) {
-							if (j < t) {
-								currNode.keys[j] = temp[j];
-								currNode.C[j] = temp2[j];
-							}
-							// TODO: which are inclusive?
-							if (j >= t) {
-								newChild.keys[j - t] = temp[j];
-								newChild.C[j - t] = temp2[j];
-								newChild.n++;
-							}
-							currNode.n = t;
-							newChild.C[newChild.n] = temp2[temp2.length - 1];
-						}
-
-						if (currNode == root) {
-							root = new BTreeNode(t, false);
-							root.C[0] = currNode;
-							currNode.leaf = true;
-							root.C[1] = newChild;
-							newChild.leaf = true;
-							root.keys[0] = temp[t];
-
-						}
-
+					// if current node is root, create a new node
+					if (currNode == root) {
+						root = new BTreeNode(t, false);
+						root.children[0] = currNode;
+						root.children[1] = newChild;
+						root.keys[0] = newChild.keys[0];
 					}
 				}
-
 			}
 		}
-		// if leaf
+		// if current node is a leaf
 		else {
-			for (int i = 0; i < currNode.n; i++) {
-				if (student.studentId == currNode.keys[i]) {
-					System.out.println("Student already in the system");
-				}
-				// if insertable
-				if (currNode.n < currNode.C.length && (student.studentId < currNode.keys[i] || i == currNode.n)) {
-					for (int j = currNode.keys.length - 1; j >= i; j++) {
-						// move key and move student
-						currNode.keys[j] = currNode.keys[j - 1];
-						currNode.s[j] = currNode.s[j - 1];
-					}
-					// insert values
-					currNode.keys[i] = (int) student.studentId;
-					currNode.s[i] = student;
+			// if current node has space to put the key-value
+			if (hasSpace(currNode.keys)) {
+				// insert values
+				insertValue(currNode.values, getInsertIndex(currNode.keys, student.studentId), student.recordId);
+				insertValue(currNode.keys, getInsertIndex(currNode.keys, student.studentId), student.studentId);
 
-					// set newChild to null
-					newChild = null;
-					return;
-				}
-				// if full
-				if (currNode.n == currNode.C.length && (student.studentId < currNode.keys[i] || i == currNode.n)) {
+				// increment key-value pair count
+				currNode.n++;
 
-					Student[] temp = Arrays.copyOf(currNode.s, currNode.s.length + 1);
-					temp[temp.length - 1] = student;
-
-					// set up new student array
-					Arrays.sort(temp, new Comparator<Student>() {
-
-						@Override
-						public int compare(Student o1, Student o2) {
-
-							return (int) (o1.studentId - o2.studentId);
-						}
-					});
-					currNode.s = Arrays.copyOfRange(temp, 0, t + 1);
-					currNode.s = Arrays.copyOf(currNode.s, temp.length - 1);
-					newChild.s = Arrays.copyOfRange(temp, t, temp.length);
-					newChild.s = Arrays.copyOf(newChild.s, temp.length - 1);
-
-					// set up key arrays in newchild and current child
-					for (
-
-							int j = 0; j < newChild.s.length; j++) {
-						if (newChild.s[i] != null) {
-							newChild.keys[i] = (int) newChild.s[i].studentId;
-						} else {
-							newChild.keys[i] = 0;
-						}
-
-						if (currNode.s[i] != null) {
-							currNode.keys[i] = (int) currNode.s[i].studentId;
-						} else {
-							currNode.keys[i] = 0;
-						}
-					}
-				}
+				setNull(newChild);
+				return;
 			}
-		}
+			// if splitting is needed
+			else {
+				// keep propogating
+				newChild = splitLeaf(currNode, student);
 
+			}
+
+		}
 	}
 
 	/**
@@ -306,6 +241,7 @@ class BTree {
 		}
 		remove(root, root, studentId, new BTreeNode(t, true));
 
+		// update csv file
 		try {
 			File inputFile = new File("student.csv");
 			File outputFile = new File("student.csv");
@@ -313,12 +249,36 @@ class BTree {
 			BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
 			long Id = studentId;
 			String currentLine;
+
+			List<Student> inputCsv = new ArrayList<Student>();
+			// TODO : you need to read all data into an arraylist/something and then use
+			// another loop to
+			// put these data back
+			// what you have can cause an INFINITE LOOP!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			//
 			while ((currentLine = reader.readLine()) != null) {
-				if (currentLine.equals(Long.toString(Id))) {
-
+				if (!currentLine.equals(Long.toString(Id))) {
+					// TODO
+					String[] attribute = currentLine.split(",");
+					if (Long.valueOf(attribute[0]) != Id)
+						inputCsv.add(new Student(Long.valueOf(attribute[0]), Integer.valueOf(attribute[4]),
+								attribute[1], attribute[2], attribute[3], Long.valueOf(attribute[5])));
 				}
-
 			}
+			reader.close();
+
+			List<Student> outputCsv = new ArrayList<>();
+			String tuple;
+
+			// // TODO
+			// else add to file
+			while ((tuple = reader.readLine()) != null) {
+				String[] attribute = tuple.split(",");
+				outputCsv.add(new Student(Long.valueOf(attribute[0]), Integer.valueOf(attribute[4]), attribute[1],
+						attribute[2], attribute[3], Long.valueOf(attribute[5])));
+			}
+			reader.close();
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -326,250 +286,324 @@ class BTree {
 		return true;
 	}
 
+	/**
+	 * TODO:paste instrution and add comment
+	 * 
+	 * @param parentNode
+	 * @param currNode
+	 * @param studentId
+	 * @param oldChild
+	 */
 	void remove(BTreeNode parentNode, BTreeNode currNode, long studentId, BTreeNode oldChild) {
 		// non-leaf node
 		if (!currNode.leaf) {
-			for (int i = 0; i < currNode.keys.length; i++) {
-				// recursive remove
-				if (currNode.keys[i] <= studentId) {
-					remove(parentNode, currNode, studentId, oldChild);
-				} else if (currNode.keys[currNode.n - 1] > studentId) {
-					remove(parentNode, currNode, studentId, oldChild);
-				}
-			}
+			// TODO
+			remove(currNode, currNode.children[getInsertIndex(parentNode.keys, studentId)], studentId, oldChild);
+
 			// usual case, child not deleted. oldChild is null
-			if (oldChild == null) {
+			if (isNull(oldChild)) {
 				return;
 			} else {
-				// remove oldChild from currNode!!!!!!!!!!!!!!!!!!!!!
-				currNode.next = null;
-				// currNode has entries to spare
-				if (elementNum(currNode.keys) <= currNode.n) {
-					// delete doesn't go further
-					oldChild = null;
-					return;
+				// TODO
+
+				// delete child
+				int index = getDeleteIndex(currNode.keys, oldChild.keys[0]);
+				if (index == 0) {
+					deleteChild(currNode.children, index);
 				} else {
+					deleteChild(currNode.children, index + 1);
+				}
+				// delete key
+				deleteValue(currNode.keys, index);
+
+				// currNode has entries to spare
+				if (elementNum(currNode.keys) > t) {
+					// delete doesn't go further
+					setNull(oldChild);
+					return;
+				}
+				// need to redistribute &/ merge
+				else {
 					// use parentpointer to find sibling
-					int index = getIndex(currNode.keys, studentId);
-					BTreeNode sibling = parentNode.children[index + 1];
-					// S has extra entries
-					if (elementNum(sibling.keys) < sibling.t && elementNum(sibling.keys) <= 2 * sibling.t) {
-						// redistribute evenly between N and S through parent
-						// move keys to left in the currNode
-						if (currNode.keys[index - 1] == 0) {
-							for (int i = 0; i < 2 * currNode.t; i++) {
-								if (currNode.keys[i + 1] != 0 && currNode.keys[i] == 0) {
-									currNode.keys[i] = currNode.keys[i + 1];
-								}
-							}
-						}
-						// redistribute sibling's keys to currNode
-						int elementNum = elementNum(currNode.keys);
-						for (int i = 0; i <= 2 * sibling.t; i++) {
-							if (i >= sibling.t) {
-								currNode.keys[elementNum + i] = sibling.keys[i];
-								if (sibling.keys[i + 1] != 0 && sibling.keys[i] == 0) {
-									sibling.keys[i] = sibling.keys[i + 1];
-								}
-							}
-						}
+					int currIndex = getDeleteIndex(parentNode.keys, currNode.keys[0]);
+					// get left sibling
+					BTreeNode leftSibling = null;
+					if (currIndex - 1 >= 0) {
+						leftSibling = parentNode.children[currIndex - 1];
+					}
+					// get right sibling
+					BTreeNode rightSibling = null;
+					if (currIndex + 1 < elementNum(parentNode.keys)) {
+						rightSibling = parentNode.children[currIndex + 1];
+					}
 
-						// move the smallest key of sibling to parent
-						// for(int i = 0; i < sibling.keys.length; i++) {
-						if (elementNum(parentNode.keys) < parentNode.t) {
-							parentNode.keys[0] = sibling.keys[0];
-						}
-						// }
+					// Left S has extra entries
+					if (rightSibling != null && elementNum(rightSibling.keys) >= 2 * t - elementNum(currNode.keys)) {
+						// // redistribute evenly between N and S through parent
+						// // move keys to left in the currNode
 
-						oldChild = null;
+						// TODO:check or revise according to your version
+						// transfer keys and children
+						int copyNum = t - elementNum(currNode.keys);
+						System.arraycopy(rightSibling.keys, 0, currNode.keys, elementNum(currNode.keys), copyNum);
+						System.arraycopy(rightSibling.children, 0, currNode.children, elementNum(currNode.keys),
+								copyNum);
+
+						// update sibling
+						rightSibling.keys = Arrays.copyOfRange(rightSibling.keys, copyNum,
+								rightSibling.keys.length - 1);
+						rightSibling.keys = Arrays.copyOf(rightSibling.keys, currNode.keys.length);
+						rightSibling.children = Arrays.copyOfRange(rightSibling.children, copyNum,
+								rightSibling.keys.length - 1);
+						rightSibling.children = Arrays.copyOf(rightSibling.children, currNode.keys.length);
+
+						// update parent
+						parentNode.keys[currIndex] = rightSibling.keys[0];
+
+						setNull(oldChild);
 						return;
 
 					}
-					// call node on the right hand side
-					else {
-						// merge N and S
-						// move keys to left in the currNode
-						if (currNode.keys[index - 1] == 0) {
-							for (int i = 0; i < 2 * currNode.t; i++) {
-								if (currNode.keys[i + 1] != 0 && currNode.keys[i] == 0) {
-									currNode.keys[i] = currNode.keys[i + 1];
-								}
-							}
-						}
-						// move all sibling's keys to currNode
-						int elementNum = elementNum(currNode.keys);
-						for (int i = 0; i <= sibling.keys.length; i++) {
-							currNode.keys[elementNum + i] = sibling.keys[i];
-						}
-						sibling = null;
-						// delete parentNode
-						parentNode.children[0] = currNode;
-						// move keys to left in the parentNode
-						for (int i = 0; i < 2 * parentNode.t; i++) {
-							if (parentNode.keys[i + 1] != 0 && parentNode.keys[i] == 0) {
-								parentNode.keys[i] = parentNode.keys[i + 1];
-							}
-						}
-						// oldchildentry = & (current entry in parent for M)
-						int newindex = getIndex(parentNode.keys, studentId);
-						oldChild = parentNode.children[newindex];
-						// redistribute parentNode's children
-						// move all entries from M to node on left
-						for (int i = 0; i < parentNode.children.length; i++) {
-							if (i != parentNode.children.length - 1)
-								parentNode.children[i] = parentNode.children[i + 1];
-						}
+					// check the other sibling
+					else if (leftSibling != null && elementNum(leftSibling.keys) >= 2 * t - elementNum(currNode.keys)) {
 
-						// discard empty node M, return!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-						for (int i = 0; i < parentNode.children.length; i++) {
-							if (parentNode.children[i] == null) {
-								// ?????????????
-							}
-						}
+						// TODO: Copy and revise the above if
+						int copyNum = t - elementNum(currNode.keys);
+						System.arraycopy(leftSibling.keys, 0, currNode.keys, elementNum(currNode.keys), copyNum);
+						System.arraycopy(leftSibling.children, 0, currNode.children, elementNum(currNode.keys),
+								copyNum);
+
+						// update sibling
+						leftSibling.keys = Arrays.copyOfRange(leftSibling.keys, copyNum, leftSibling.keys.length - 1);
+						leftSibling.keys = Arrays.copyOf(leftSibling.keys, currNode.keys.length);
+						leftSibling.children = Arrays.copyOfRange(leftSibling.children, copyNum,
+								leftSibling.keys.length - 1);
+						leftSibling.children = Arrays.copyOf(leftSibling.children, currNode.keys.length);
+
+						// update parent
+						parentNode.keys[currIndex] = currNode.keys[0];
+
+						setNull(oldChild);
+						return;
+					}
+					// call node on the right hand side, merge
+					else if (rightSibling != null) {
+						// merge N and S
+						oldChild = currNode;
+
+						// move parent's key down
+						currNode.keys[elementNum(currNode.keys)] = parentNode.keys[currIndex + 1];
+						// move keys in from sibling
+						System.arraycopy(rightSibling.children, 0, currNode.children, elementNum(currNode.keys),
+								elementNum(rightSibling.keys) + 1);
+						System.arraycopy(rightSibling.keys, 0, currNode.keys, elementNum(currNode.keys),
+								elementNum(rightSibling.keys));
+
+						// discard sibling
+						deleteChild(parentNode.children, getInsertIndex(parentNode.keys, rightSibling.keys[0]));
+						deleteValue(parentNode.keys, currIndex + 1);
+
+						return;
+					}
+					// call node on the left hand side, merge with left sibling
+					else if (leftSibling != null) {
+						// TODO:copy & revise like the above merge or your own ideas
+						// merge N and S
+						oldChild = currNode;
+
+						// move parent's key down
+						currNode.keys[elementNum(currNode.keys)] = parentNode.keys[currIndex + 1];
+						// move keys in from sibling
+						System.arraycopy(leftSibling.children, 0, currNode.children, elementNum(currNode.keys),
+								elementNum(leftSibling.keys) + 1);
+						System.arraycopy(leftSibling.keys, 0, currNode.keys, elementNum(currNode.keys),
+								elementNum(leftSibling.keys));
+
+						// discard sibling
+						deleteChild(parentNode.children, getInsertIndex(parentNode.keys, leftSibling.keys[0]));
+						deleteValue(parentNode.keys, currIndex + 1);
 
 						return;
 					}
 				}
-
 			}
 		}
-		// currNode is a leaf node, call it L
-		if (currNode.leaf) {
+		// if leaf
+		else {
 			// L has entries to spare
-			int a = elementNum(currNode.keys);
-			if (elementNum(currNode.keys) <= currNode.n && a > currNode.t) {
+			if (elementNum(currNode.keys) > t) {
 				// remove entry
-				int j = 0;
+				int keyPosition = 0;
 				for (int i = 0; i < currNode.keys.length; i++) {
 					if (studentId == currNode.keys[i]) {
 						currNode.keys[i] = 0;
-						for (j = i; j < currNode.keys.length; j++) {
+						for (keyPosition = i; keyPosition < currNode.keys.length; keyPosition++) {
 							if (currNode.keys[i + 1] != 0)
 								currNode.keys[i] = currNode.keys[i + 1];
 						}
 					}
 				}
+				// TODO: you need to delete the value in the key-value pair too
 
-				oldChild = null;
+				// my version
+				keyPosition = getDeleteIndex(currNode.keys, studentId);
+				deleteValue(currNode.keys, keyPosition);
+				deleteValue(currNode.values, keyPosition);
+
+				setNull(oldChild);
 				return;
 			}
 			// once in a while, the leaf becomes underfull
 			else {
-				// use parentNode to find sibling
-				int index = getIndex(currNode.keys, studentId);
-				BTreeNode sibling = parentNode.children[index + 1];
-				// S has extra entries
-				if (elementNum(sibling.keys) < sibling.t && elementNum(sibling.keys) <= 2 * sibling.t) {
-					// redistribute evenly between N and S through parent
-					// move keys to left in the currNode
-					if (currNode.keys[index - 1] == 0) {
-						for (int i = 0; i < 2 * currNode.t; i++) {
-							if (currNode.keys[i + 1] != 0 && currNode.keys[i] == 0) {
-								currNode.keys[i] = currNode.keys[i + 1];
-							}
-						}
-					}
-					// redistribute sibling's keys to currNode
-					int elementNum = elementNum(currNode.keys);
-					for (int i = 0; i <= 2 * sibling.t; i++) {
-						if (i >= sibling.t) {
-							currNode.keys[elementNum + i] = sibling.keys[i];
-							if (sibling.keys[i + 1] != 0 && sibling.keys[i] == 0) {
-								sibling.keys[i] = sibling.keys[i + 1];
-							}
-						}
-					}
 
-					// find entry in parent for node on right
-					// move the smallest key of sibling to parent
-					if (elementNum(parentNode.keys) < parentNode.t) {
-						parentNode.keys[0] = sibling.keys[0];
-					}
-					oldChild = null;
+				// TODO: similar to the redistribute and merge above
+				// TODO: you can use BTreeNode.n here
+				// TODO: you need to decrement n after you delete a key-value pair
+
+				// TODO: I paste from the redistribute and merge above
+
+				// use parentpointer to find sibling
+				int currIndex = getDeleteIndex(parentNode.keys, currNode.keys[0]);
+				// get left sibling
+				BTreeNode leftSibling = null;
+				if (currIndex - 1 >= 0) {
+					leftSibling = parentNode.children[currIndex - 1];
+				}
+				BTreeNode rightSibling = null;
+				if (currIndex + 1 < elementNum(parentNode.keys)) {
+					rightSibling = parentNode.children[currIndex + 1];
+				}
+
+				// Left S has extra entries
+				if (rightSibling != null && elementNum(rightSibling.keys) >= 2 * t - elementNum(currNode.keys)) {
+					// // redistribute evenly between N and S through parent
+					// // move keys to left in the currNode
+
+					// transfer keys and children
+					int copyNum = t - elementNum(currNode.keys);
+					System.arraycopy(rightSibling.keys, 0, currNode.keys, elementNum(currNode.keys), copyNum);
+					System.arraycopy(rightSibling.children, 0, currNode.children, elementNum(currNode.keys), copyNum);
+
+					// update sibling
+					rightSibling.keys = Arrays.copyOfRange(rightSibling.keys, copyNum, rightSibling.keys.length - 1);
+					rightSibling.keys = Arrays.copyOf(rightSibling.keys, currNode.keys.length);
+					rightSibling.children = Arrays.copyOfRange(rightSibling.children, copyNum,
+							rightSibling.keys.length - 1);
+					rightSibling.children = Arrays.copyOf(rightSibling.children, currNode.keys.length);
+
+					// update parent
+					parentNode.keys[currIndex] = rightSibling.keys[0];
+
+					setNull(oldChild);
+					return;
+
+				}
+				// check the other sibling
+				else if (leftSibling != null && elementNum(leftSibling.keys) >= 2 * t - elementNum(currNode.keys)) {
+
+					// TODO: Copy and revise the above if
+
+					int copyNum = t - elementNum(currNode.keys);
+					System.arraycopy(leftSibling.keys, 0, currNode.keys, elementNum(currNode.keys), copyNum);
+					System.arraycopy(leftSibling.children, 0, currNode.children, elementNum(currNode.keys), copyNum);
+
+					// update sibling
+					leftSibling.keys = Arrays.copyOfRange(leftSibling.keys, copyNum, leftSibling.keys.length - 1);
+					leftSibling.keys = Arrays.copyOf(leftSibling.keys, currNode.keys.length);
+					leftSibling.children = Arrays.copyOfRange(leftSibling.children, copyNum,
+							leftSibling.keys.length - 1);
+					leftSibling.children = Arrays.copyOf(leftSibling.children, currNode.keys.length);
+
+					// update parent
+					parentNode.keys[currIndex] = currNode.keys[0];
+
+					setNull(oldChild);
 					return;
 				}
-				// call node on right hand side M
-				else {
+				// call node on the right hand side, merge
+				else if (rightSibling != null) {
 					// merge L and S
-					// move keys to left in the currNode
-					if (currNode.keys[index - 1] == 0) {
-						for (int i = 0; i < 2 * currNode.t; i++) {
-							if (currNode.keys[i + 1] != 0 && currNode.keys[i] == 0) {
-								currNode.keys[i] = currNode.keys[i + 1];
-							}
-						}
-					}
-					// move all sibling's keys to currNode
-					int elementNum = elementNum(currNode.keys);
-					for (int i = 0; i <= sibling.keys.length; i++) {
-						currNode.keys[elementNum + i] = sibling.keys[i];
-					}
-					sibling = null;
-					// delete parentNode
-					parentNode.children[0] = currNode;
-					// move keys to left in the parentNode
-					for (int i = 0; i < 2 * parentNode.t; i++) {
-						if (parentNode.keys[i + 1] != 0 && parentNode.keys[i] == 0) {
-							parentNode.keys[i] = parentNode.keys[i + 1];
-						}
-					}
+					oldChild = currNode;
 
-					// oldchildentry = & (current entry in parent for M)
-					int newindex = getIndex(parentNode.keys, studentId);
-					oldChild = parentNode.children[newindex];
-					// move all entries from M to node on left;
-					for (int i = 0; i < parentNode.children.length; i++) {
-						if (i != parentNode.children.length - 1)
-							parentNode.children[i] = parentNode.children[i + 1];
-					}
-					// discard empty node M, return!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-					for (int i = 0; i < parentNode.children.length; i++) {
-						if (parentNode.children[i] == null) {
-							// ?????????????
-						}
-					}
+					// move parent's key down
+					currNode.keys[elementNum(currNode.keys)] = parentNode.keys[currIndex + 1];
+					// move keys in from sibling
+					System.arraycopy(rightSibling.children, 0, currNode.children, elementNum(currNode.keys),
+							elementNum(rightSibling.keys) + 1);
+					System.arraycopy(rightSibling.keys, 0, currNode.keys, elementNum(currNode.keys),
+							elementNum(rightSibling.keys));
+
+					// discard sibling
+					deleteChild(parentNode.children, getInsertIndex(parentNode.keys, rightSibling.keys[0]));
+					deleteValue(parentNode.keys, currIndex + 1);
+
+					// update parent
+					parentNode.keys[currIndex] = rightSibling.keys[0];
+
+					setNull(oldChild);
+					return;
+				}
+				// call node on the left hand side, merge with left sibling
+				else if (leftSibling != null) {
+					// TODO:copy & revise like the above merge or your own ideas
+					// merge L and S
+					oldChild = currNode;
+
+					// move parent's key down
+					currNode.keys[elementNum(currNode.keys)] = parentNode.keys[currIndex + 1];
+					// move keys in from sibling
+					System.arraycopy(leftSibling.children, 0, currNode.children, elementNum(currNode.keys),
+							elementNum(leftSibling.keys) + 1);
+					System.arraycopy(leftSibling.keys, 0, currNode.keys, elementNum(currNode.keys),
+							elementNum(leftSibling.keys));
+
+					// discard sibling
+					deleteChild(parentNode.children, getInsertIndex(parentNode.keys, leftSibling.keys[0]));
+					deleteValue(parentNode.keys, currIndex + 1);
+					// update parent
+					parentNode.keys[currIndex] = leftSibling.keys[0];
+
+					setNull(oldChild);
 					return;
 				}
 			}
 		}
-		return;
 	}
 
+	/**
+	 * Return a list of recordIDs from left to right of leaf nodes.
+	 *
+	 */
 	List<Long> print() {
 
 		List<Long> listOfRecordID = new ArrayList<>();
 
-		/**
-		 * TODO: Implement this function to print the B+Tree. Return a list of recordIDs
-		 * from left to right of leaf nodes.
-		 *
-		 */
 		BTreeNode currNode = root;
 		if (root != null) {
-			// go through all root's keys
-			for (int i = 0; i < root.children.length; i++) {
-				// check the availability
-				if (root.children[i] != null) {
-					// reach to the leaf
-					while (currNode.children != null) {
-						if (currNode.leaf) {
-							for (int j = 0; j < currNode.keys.length; j++) {
-								if (currNode.keys[i] != 0)
-									listOfRecordID.add(currNode.values[i]);
-							}
-						}
-					}
+			// find the smallest leaf
+			while (!currNode.leaf) {
+				currNode = currNode.children[0];
+			}
+			// add all recordIds
+			while (currNode.next != null) {
+				for (int i = 0; i < currNode.n; i++) {
+					listOfRecordID.add(currNode.values[i]);
 				}
 			}
 		}
 		return listOfRecordID;
 	}
 
+	// ------------------------------helper
+	// methods-----------------------------------------------
+	// -------------------------------------------------------------------------------------------
+	// -------------------------------------------------------------------------------------------
+
 	/**
 	 * count the number of valid elements in the list
 	 * 
 	 * @param list
-	 * @return
+	 * @return the number of valid elements
 	 */
 	int elementNum(long[] list) {
 		int count = 0;
@@ -581,13 +615,13 @@ class BTree {
 	}
 
 	/**
-	 * return the appropriote index
+	 * get the appropriote index for insertion
 	 * 
 	 * @param list
 	 * @param element
-	 * @return
+	 * @return the appropriote index
 	 */
-	int getIndex(long[] list, long element) {
+	int getInsertIndex(long[] list, long element) {
 		int index = 0;
 		// list is empty, insert at 0
 		if (list[0] == 0) {
@@ -599,11 +633,216 @@ class BTree {
 		}
 		// find index within array
 		for (; index < elementNum(list) - 1; index++) {
-			if (list[index] < element && element < list[index + 1]) {
-				return index++;
+			if (list[index] <= element && element < list[index + 1]) {
+				return ++index;
 			}
 		}
 		return index;
 	}
 
+	/**
+	 * get the appropriote index for deletion
+	 * 
+	 * @param list
+	 * @param element
+	 * @return the appropriote index
+	 */
+	int getDeleteIndex(long[] list, long element) {
+		if (getInsertIndex(list, element) > 0) {
+			return getInsertIndex(list, element) - 1;
+		}
+		return 0;
+	}
+
+	/**
+	 * check if there is sapce left for a list
+	 * 
+	 * @param list
+	 * @return whether there is space or not
+	 */
+	boolean hasSpace(long[] list) {
+		return elementNum(list) < list.length;
+	}
+
+	/**
+	 * shift the values in the array and insert the value
+	 * 
+	 * @param list
+	 * @param index
+	 * @param value
+	 */
+	void insertValue(long[] list, int index, long value) {
+		for (int i = list.length - 1; i > index; i--) {
+			list[i] = list[i - 1];
+		}
+		list[index] = value;
+	}
+
+	/**
+	 * insert a tree node at some index
+	 * 
+	 * @param list
+	 * @param index
+	 * @param child
+	 */
+	void insertChild(BTreeNode[] list, int index, BTreeNode child) {
+		for (int i = list.length - 1; i >= index; i--) {
+			list[i] = list[i - 1];
+		}
+		list[index] = child;
+	}
+
+	/**
+	 * Split an internal node
+	 * 
+	 * @param currNode
+	 * @param newChild
+	 * @return the newly produced internal node
+	 */
+	BTreeNode splitInternal(BTreeNode currNode, BTreeNode newChild) {
+		// the new node splitted that stores the larger keys and children
+		BTreeNode newNode = new BTreeNode(t, false);
+		// copy first
+		newNode.keys = Arrays.copyOfRange(currNode.keys, t, currNode.keys.length);
+		newNode.children = Arrays.copyOfRange(currNode.children, t + 1, currNode.children.length);
+		newNode.keys = Arrays.copyOf(newNode.keys, currNode.keys.length);
+		newNode.children = Arrays.copyOf(newNode.children, currNode.children.length);
+
+		// clears the second half of the original keys and children list
+		Arrays.fill(currNode.keys, t, currNode.keys.length, 0);
+		Arrays.fill(currNode.children, t, currNode.children.length, null);
+
+		// if the newChild should be added to the newNode
+		if (newChild.keys[0] > currNode.keys[t - 1]) {
+			// insert child and value
+			insertChild(newNode.children, getInsertIndex(newNode.keys, newChild.keys[0]) + 1, newChild);
+			insertValue(newNode.keys, getInsertIndex(newNode.keys, newChild.keys[0]), newChild.keys[0]);
+		}
+		// insert into currNode
+		else {
+			// insert child and value
+			insertChild(currNode.children, getInsertIndex(currNode.keys, newChild.keys[0]) + 1, newChild);
+			insertValue(currNode.keys, getInsertIndex(currNode.keys, newChild.keys[0]), newChild.keys[0]);
+		}
+
+		return newNode;
+	}
+
+	/**
+	 * split a leaf node
+	 * 
+	 * @param currNode
+	 * @param newChild
+	 * @return the newly produced internal node
+	 */
+	BTreeNode splitLeaf(BTreeNode currNode, Student student) {
+		// the new node splitted that stores the larger keys and values
+		BTreeNode newNode = new BTreeNode(t, true);
+
+		// copy first
+		newNode.keys = Arrays.copyOfRange(currNode.keys, t, currNode.keys.length);
+		newNode.values = Arrays.copyOfRange(currNode.values, t, currNode.keys.length);
+		newNode.keys = Arrays.copyOf(newNode.keys, currNode.keys.length);
+		newNode.values = Arrays.copyOf(newNode.values, currNode.keys.length);
+
+		// clears the second half of the original keys and value list
+		Arrays.fill(currNode.keys, t, currNode.keys.length, 0);
+		Arrays.fill(currNode.values, t, currNode.keys.length, 0);
+
+		// add the new entry
+		// if the entry should be added to the newNode
+		if (student.studentId > currNode.keys[t - 1]) {
+			// insert values
+			insertValue(newNode.values, getInsertIndex(newNode.keys, student.studentId), student.recordId);
+			insertValue(newNode.keys, getInsertIndex(newNode.keys, student.studentId), student.studentId);
+
+		}
+		// insert into currNode
+		else {
+			// insert values
+			insertValue(currNode.values, getInsertIndex(currNode.keys, student.studentId), student.recordId);
+			insertValue(currNode.keys, getInsertIndex(currNode.keys, student.studentId), student.studentId);
+
+		}
+
+		// updates the key-value pair count
+		currNode.n = elementNum(currNode.keys);
+		newNode.n = elementNum(currNode.keys);
+
+		// updates the sibling pointers
+		newNode.next = currNode.next;
+		currNode.next = newNode;
+
+		return newNode;
+	}
+
+	/**
+	 * shift the values in the array and delete the value
+	 * 
+	 * @param list
+	 * @param index
+	 * @param value
+	 */
+	void deleteValue(long[] list, int index) {
+		// list[index]=0;
+		for (int i = index; i < list.length; i++) {
+			list[i] = list[i + 1];
+		}
+		list[list.length - 1] = 0;
+	}
+
+	/**
+	 * delete a tree node at some index
+	 * 
+	 * @param list
+	 * @param index
+	 * @param child
+	 */
+	void deleteChild(BTreeNode[] list, int index) {
+		// list[index]=null;
+		for (int i = index; i < list.length; i++) {
+			list[i] = list[i + 1];
+		}
+		list[list.length - 1] = null;
+	}
+
+	/**
+	 * set a child to null
+	 * 
+	 * @param dest
+	 * @param source
+	 */
+	void setNull(BTreeNode node) {
+		node.t = t;
+		node.leaf = false;
+		node.keys = new long[2 * t - 1];
+		node.children = new BTreeNode[2 * t];
+		node.n = 0;
+		node.next = null;
+		node.values = new long[2 * t - 1];
+
+	}
+
+	/**
+	 * check if node is null
+	 * 
+	 * @param node
+	 * @return true if null
+	 */
+	boolean isNull(BTreeNode node) {
+		return node.keys.length == 0;
+	}
+
+	/*
+	 * deep copy from a node into another node
+	 */
+	void copy(BTreeNode source, BTreeNode dest) {
+		dest.t = source.t;
+		dest.leaf = source.leaf;
+		dest.keys = source.keys;
+		dest.children = source.children;
+		dest.n = source.n = 0;
+		dest.next = source.next;
+		dest.values = source.values;
+	}
 }

@@ -192,7 +192,8 @@ class BTree {
         }
         // if we do ont have space
         else {
-
+          // find the middle key
+          long middleKey = currNode.keys[t - 1];
           // keep propogating
           splitInternal(currNode, newChild, newNode);
 
@@ -201,7 +202,7 @@ class BTree {
             root = new BTreeNode(t, false);
             root.children[0] = currNode;
             root.children[1] = newChild;
-            root.keys[0] = newChild.keys[0];
+            root.keys[0] = middleKey;
           }
         }
       }
@@ -224,6 +225,7 @@ class BTree {
       }
       // if splitting is needed
       else {
+
         // keep propogating
         splitLeaf(currNode, student, newChild);
 
@@ -744,14 +746,14 @@ class BTree {
     newNode.children = Arrays.copyOfRange(currNode.children, t, currNode.children.length);
     newNode.keys = Arrays.copyOf(newNode.keys, currNode.keys.length);
     newNode.children = Arrays.copyOf(newNode.children, currNode.children.length);
-
-
+    // keep the middle key
+    long middleKey = currNode.keys[t];
     // clears the second half of the original keys and children list
     Arrays.fill(currNode.keys, t - 1, currNode.keys.length, 0);
     Arrays.fill(currNode.children, t, currNode.children.length, null);
 
     // if the newNode should be added to the newChild
-    if (newChild.keys[0] > currNode.keys[t - 1]) {
+    if (newChild.keys[0] >= middleKey) {
       // insert child and value
       insertChild(newNode.children, getInsertIndex(newNode.keys, newChild.keys[0]) + 1, newChild);
       insertValue(newNode.keys, getInsertIndex(newNode.keys, newChild.keys[0]), newChild.keys[0]);

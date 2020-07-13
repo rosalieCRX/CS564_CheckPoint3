@@ -169,10 +169,10 @@ class BTree {
       }
       // we split child, must insert *newchildentry in currNode
       else {
-        //the newly splitted node
-        BTreeNode newNode = new BTreeNode(t,false);
-        copy(newChild,newNode);
-        
+        // the newly splitted node
+        BTreeNode newNode = new BTreeNode(t, false);
+        copy(newChild, newNode);
+
         // if we have space to accept the newChild
         if (hasSpace(currNode.keys)) {
           // insert child
@@ -180,8 +180,9 @@ class BTree {
           if (index == 0) {
             insertChild(currNode.children, 0, newNode);
           } else {
-            insertChild(currNode.children, getInsertIndex(currNode.keys, newNode.keys[0]) + 1,
-                newNode);
+            insertChild(currNode.children, index + 1, newNode);
+            // update reference
+            currNode.children[index].next = newNode;
           }
           // insert key
           insertValue(currNode.keys, index, newNode.keys[0]);
@@ -194,7 +195,7 @@ class BTree {
 
           // keep propogating
           splitInternal(currNode, newChild);
-          
+
           // if current node is root, create a new node
           if (currNode == root) {
             root = new BTreeNode(t, false);
@@ -224,8 +225,8 @@ class BTree {
       // if splitting is needed
       else {
         // keep propogating
-        splitLeaf(currNode, student,newChild);
-        
+        splitLeaf(currNode, student, newChild);
+
         // if current node is root, create a new node
         if (currNode == root) {
           root = new BTreeNode(t, false);
@@ -582,7 +583,7 @@ class BTree {
         else if (rightSibling != null) {
           // merge N and S
           copy(currNode, oldChild);
-          
+
           // move parent's key down
           currNode.keys[elementNum(currNode.keys)] = parentNode.keys[currIndex + 1];
           // move keys in from sibling
@@ -732,6 +733,7 @@ class BTree {
         for (int i = 0; i < currNode.n; i++) {
           listOfRecordID.add(currNode.values[i]);
         }
+        currNode = currNode.next;
       }
     }
     return listOfRecordID;
@@ -835,9 +837,9 @@ class BTree {
     for (int i = list.length - 1; i >= index; i--) {
       list[i] = list[i - 1];
     }
-    list[index] = new BTreeNode(t,false);
-    copy(child,list[index]);
+    list[index] = child;
   }
+
   /**
    * Split an internal node
    * 
@@ -875,12 +877,12 @@ class BTree {
    * split a leaf node
    * 
    * @param currNode
-   * @param student 
+   * @param student
    * @param newChild--the new node splitted that stores the larger keys and values
    * 
    */
   void splitLeaf(BTreeNode currNode, Student student, BTreeNode newChild) {
-    newChild.leaf=true;
+    newChild.leaf = true;
     // copy first
     newChild.keys = Arrays.copyOfRange(currNode.keys, t, currNode.keys.length);
     newChild.values = Arrays.copyOfRange(currNode.values, t, currNode.keys.length);
@@ -897,7 +899,8 @@ class BTree {
       // insert values
       insertValue(newChild.values, getInsertIndex(newChild.keys, student.studentId),
           student.recordId);
-      insertValue(newChild.keys, getInsertIndex(newChild.keys, student.studentId), student.studentId);
+      insertValue(newChild.keys, getInsertIndex(newChild.keys, student.studentId),
+          student.studentId);
 
     }
     // insert into currNode
@@ -984,19 +987,19 @@ class BTree {
    */
   void copy(BTreeNode source, BTreeNode dest) {
     dest.t = source.t;
-    dest.leaf = source.leaf; 
-    //deep copy key list
-    for(int i=0;i<source.keys.length;i++) {
+    dest.leaf = source.leaf;
+    // deep copy key list
+    for (int i = 0; i < source.keys.length; i++) {
       dest.keys[i] = source.keys[i];
     }
-    //deep copy child list
-    for(int i=0;i<source.children.length;i++) {
+    // deep copy child list
+    for (int i = 0; i < source.children.length; i++) {
       dest.children[i] = source.children[i];
     }
     dest.n = source.n;
     dest.next = source.next;
-    //deep copy value list
-    for(int i=0;i<source.values.length;i++) {
+    // deep copy value list
+    for (int i = 0; i < source.values.length; i++) {
       dest.values[i] = source.values[i];
     }
   }

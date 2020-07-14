@@ -507,12 +507,12 @@ class BTree {
         int currIndex = getDeleteIndex(parentNode.keys, currNode.keys[0]);
         // get left sibling
         BTreeNode leftSibling = null;
-        if (currIndex - 1 >= 0) {
-          leftSibling = parentNode.children[currIndex - 1];
+        if (currIndex >= 0) {
+          leftSibling = parentNode.children[currIndex + 1];
         }
         BTreeNode rightSibling = null;
         if (currIndex + 1 < elementNum(parentNode.keys)) {
-          rightSibling = parentNode.children[currIndex + 1];
+          rightSibling = parentNode.children[currIndex + 2];
         }
 
         // Left S has extra entries
